@@ -6,23 +6,25 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Use minimal NestJS features for production
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'], // Reduce logging
+  });
 
-  // Enable minimal validation globally (memory optimized)
+  // Minimal validation to save memory
   app.useGlobalPipes(new ValidationPipe({
-    transform: false, // Disable transformation to save memory
-    whitelist: false, // Disable whitelist to save memory
+    transform: false,
+    whitelist: false,
     forbidNonWhitelisted: false,
   }));
 
-  // Enable CORS
+  // Minimal CORS
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
   });
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`✅ Backend running on http://localhost:${port}`);
+  console.log(`✅ Production backend running on port ${port}`);
 }
 void bootstrap();
