@@ -1,4 +1,4 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
 import { AdafruitPublisherService } from '../services/adafruit-publisher.service';
 import { AdafruitConfigService } from '../config/adafruit.config';
 
@@ -62,4 +62,31 @@ export class AdafruitController {
       },
     };
   }
+
+  /**
+   * Test endpoint to publish data directly to Adafruit
+   */
+  @Post('test-publish')
+  async testPublish(@Body() data: { temperature?: number; humidity?: number; light?: number }) {
+    const results: Record<string, boolean> = {};
+
+    if (data.temperature !== undefined) {
+      results.temperature = await this.adafruitPublisher.publishTemperature(data.temperature);
+    }
+
+    if (data.humidity !== undefined) {
+      results.humidity = await this.adafruitPublisher.publishHumidity(data.humidity);
+    }
+
+    if (data.light !== undefined) {
+      results.light = await this.adafruitPublisher.publishLight(data.light);
+    }
+
+    return {
+      success: Object.values(results).every((r) => r),
+      results,
+      message: 'Publish test completed',
+    };
+  }
+
 }

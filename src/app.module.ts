@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DeviceModule } from '@modules/device/device.module';
@@ -10,7 +11,11 @@ import { NotificationModule } from '@modules/notification/notification.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRoot(
       process.env.NODE_ENV === 'production'
         ? process.env.MONGODB_URI ||

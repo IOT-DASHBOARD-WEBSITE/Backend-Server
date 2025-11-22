@@ -105,7 +105,7 @@ export class SensorService {
       deviceId: sensorData.deviceId,
       temperature: sensorData.temperature,
       humidity: sensorData.humidity,
-      pressure: sensorData.pressure,
+      light: sensorData.light,
       timestamp: sensorData.timestamp,
       createdAt: sensorData.createdAt,
     };

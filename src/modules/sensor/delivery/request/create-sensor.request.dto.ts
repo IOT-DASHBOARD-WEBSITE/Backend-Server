@@ -12,7 +12,7 @@ export class CreateSensorDataDto {
 
   @IsOptional()
   @IsNumber()
-  pressure?: number;
+  light?: number;
 
   @IsDateString()
   timestamp: string;

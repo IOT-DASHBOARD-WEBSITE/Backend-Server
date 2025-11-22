@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SensorData, SensorDataSchema } from './infras/entities/sensor.entity';
 import { SensorController } from './delivery/sensor.controller';
@@ -10,7 +10,7 @@ import { NotificationModule } from '../notification/notification.module';
     MongooseModule.forFeature([
       { name: SensorData.name, schema: SensorDataSchema },
     ]),
-    NotificationModule,
+    forwardRef(() => NotificationModule),
   ],
   controllers: [SensorController],
   providers: [SensorService],

@@ -26,14 +26,7 @@ export class CreateDeviceDto {
 }
 
 export class UpdateDeviceDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
+  // Only allow updating WiFi and data interval
   @IsOptional()
   @IsString()
   wifiSSID?: string;

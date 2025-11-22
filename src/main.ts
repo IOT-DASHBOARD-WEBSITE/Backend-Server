@@ -3,21 +3,49 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 
-dotenv.config();
+// Load environment variables explicitly
+dotenv.config({ path: '.env' });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable minimal validation globally (memory optimized)
-  app.useGlobalPipes(new ValidationPipe({
-    transform: false, // Disable transformation to save memory
-    whitelist: false, // Disable whitelist to save memory
-    forbidNonWhitelisted: false,
-  }));
+  // Enable validation globally
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-  // Enable CORS
+  // Enable CORS - allow localhost, ngrok, and Cloudflare tunnel URLs
+  const allowedOrigins = [
+    'http://localhost:3000',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean);
+  
+  // Allow ngrok and Cloudflare tunnel URLs (pattern matching)
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Allow localhost
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      
+      // Allow ngrok URLs
+      if (origin.includes('ngrok-free.app') || origin.includes('ngrok.io')) {
+        return callback(null, true);
+      }
+      
+      // Allow Cloudflare tunnel URLs
+      if (origin.includes('trycloudflare.com') || origin.includes('cloudflare.com')) {
+        return callback(null, true);
+      }
+      
+      // Allow configured origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      callback(null, true); // Allow all for now (can restrict later)
+    },
     credentials: true,
   });
 

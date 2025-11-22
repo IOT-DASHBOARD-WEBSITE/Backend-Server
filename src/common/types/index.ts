@@ -29,6 +29,6 @@ export type DeviceStatus = 'online' | 'offline' | 'inactive';
 export type SensorReading = {
   temperature?: number;
   humidity?: number;
-  pressure?: number;
+  light?: number;
   [key: string]: any;
 };

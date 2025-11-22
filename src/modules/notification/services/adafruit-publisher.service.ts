@@ -49,6 +49,59 @@ export class AdafruitPublisherService {
   }
 
   /**
+   * Send WiFi SSID to Adafruit IO
+   */
+  async publishWifiSsid(value: string): Promise<boolean> {
+    this.logger.log(`📤 Publishing WiFi SSID to Adafruit: ${value}`);
+    const result = await this.publishToFeed(
+      this.adafruitConfig.feeds.wifiSsid,
+      value,
+    );
+    if (result) {
+      this.logger.log(`✅ Successfully published WiFi SSID to Adafruit`);
+    } else {
+      this.logger.error(`❌ Failed to publish WiFi SSID to Adafruit`);
+    }
+    return result;
+  }
+
+  /**
+   * Send WiFi Password to Adafruit IO
+   */
+  async publishWifiPassword(value: string): Promise<boolean> {
+    this.logger.log(`📤 Publishing WiFi Password to Adafruit`);
+    const result = await this.publishToFeed(
+      this.adafruitConfig.feeds.wifiPassword,
+      value,
+    );
+    if (result) {
+      this.logger.log(`✅ Successfully published WiFi Password to Adafruit`);
+    } else {
+      this.logger.error(`❌ Failed to publish WiFi Password to Adafruit`);
+    }
+    return result;
+  }
+
+  /**
+   * Send send interval (in seconds) to Adafruit IO
+   */
+  async publishSendInterval(value: number): Promise<boolean> {
+    // Convert milliseconds to seconds for Adafruit
+    const seconds = Math.floor(value / 1000);
+    this.logger.log(`📤 Publishing sendInterval to Adafruit: ${seconds} seconds (${value}ms)`);
+    const result = await this.publishToFeed(
+      this.adafruitConfig.feeds.sendInterval,
+      seconds.toString(),
+    );
+    if (result) {
+      this.logger.log(`✅ Successfully published sendInterval: ${seconds}s to Adafruit`);
+    } else {
+      this.logger.error(`❌ Failed to publish sendInterval to Adafruit`);
+    }
+    return result;
+  }
+
+  /**
    * Generic method to publish data to any feed
    */
   private async publishToFeed(
@@ -61,11 +114,26 @@ export class AdafruitPublisherService {
     }
 
     try {
-      await this.httpClient.post(`${feedUrl}/data`, {
+      // Extract feed key from URL if it's a full URL
+      // e.g., "https://io.adafruit.com/api/v2/quangppm/feeds/yolofarm.farm-send-interval"
+      // -> "yolofarm.farm-send-interval"
+      let cleanFeedKey = feedUrl;
+      if (feedUrl.includes('/feeds/')) {
+        const match = feedUrl.match(/\/feeds\/([^\/]+)/);
+        if (match && match[1]) {
+          cleanFeedKey = match[1];
+        }
+      }
+
+      // Build proper URL
+      const username = this.adafruitConfig.username;
+      const url = `https://io.adafruit.com/api/v2/${username}/feeds/${cleanFeedKey}/data`;
+      
+      const response = await this.httpClient.post(url, {
         value,
       });
 
-      this.logger.debug(`Published data to ${feedUrl}: ${value}`);
+      this.logger.log(`✅ Published data to Adafruit feed ${cleanFeedKey}: ${value} (URL: ${url})`);
       return true;
     } catch (error) {
       const errorMessage =

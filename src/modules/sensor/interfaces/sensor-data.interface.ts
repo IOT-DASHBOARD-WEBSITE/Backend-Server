@@ -3,7 +3,7 @@ export interface SensorDataInterface {
   deviceId: string;
   temperature: number;
   humidity: number;
-  pressure?: number;
+  light?: number;
   timestamp: Date;
   createdAt: Date;
 }

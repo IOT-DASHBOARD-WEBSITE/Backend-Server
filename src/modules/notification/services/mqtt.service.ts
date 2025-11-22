@@ -10,6 +10,7 @@ import * as mqtt from 'mqtt';
 export class MqttService implements OnModuleInit, OnModuleDestroy {
   private client: mqtt.MqttClient;
   private readonly logger = new Logger(MqttService.name);
+  private topicCallbacks: Map<string, Set<(topic: string, payload: Buffer) => void>> = new Map();
 
   onModuleInit() {
     this.connect();
@@ -23,12 +24,12 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
   private connect() {
     try {
-      // Select broker URL based on NODE_ENV
+      // Select broker URL - use Adafruit MQTT if configured, otherwise local
       const brokerUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.MQTT_BROKER_URL ||
-            'mqtts://your-cluster.hivemq.cloud:8883'
-          : process.env.MQTT_BROKER_URL_LOCAL || 'mqtt://localhost:1883';
+        process.env.MQTT_BROKER_URL ||
+        (process.env.ADAFRUIT_USERNAME
+          ? `mqtt://${process.env.ADAFRUIT_USERNAME}.mqtt.adafruit.io:1883`
+          : 'mqtt://mqtt:1883');
 
       const clientId = `backend-${Date.now()}`;
       this.logger.log(`Connecting to MQTT broker: ${brokerUrl}`);
@@ -39,12 +40,17 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         connectTimeout: 30 * 1000,
       };
 
-      // Add credentials if provided
-      if (process.env.MQTT_USERNAME) {
+      // Add credentials - use Adafruit credentials if available
+      if (process.env.ADAFRUIT_USERNAME && process.env.ADAFRUIT_KEY) {
+        (mqttOptions as Record<string, string>).username =
+          process.env.ADAFRUIT_USERNAME;
+        (mqttOptions as Record<string, string>).password =
+          process.env.ADAFRUIT_KEY;
+      } else if (process.env.MQTT_USERNAME) {
         (mqttOptions as Record<string, string>).username =
           process.env.MQTT_USERNAME;
       }
-      if (process.env.MQTT_PASSWORD) {
+      if (process.env.MQTT_PASSWORD && !process.env.ADAFRUIT_KEY) {
         (mqttOptions as Record<string, string>).password =
           process.env.MQTT_PASSWORD;
       }
@@ -60,9 +66,20 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.client.on('message', (topic: string, payload: Buffer) => {
-        this.logger.debug(
-          `Message received on ${topic}: ${payload.toString()}`,
+        this.logger.log(
+          `📨 Message received on ${topic}: ${payload.toString()}`,
         );
+        // Trigger registered callbacks
+        const callbacks = this.topicCallbacks.get(topic);
+        if (callbacks) {
+          callbacks.forEach((callback) => {
+            try {
+              callback(topic, payload);
+            } catch (error) {
+              this.logger.error(`Error in topic callback for ${topic}:`, error);
+            }
+          });
+        }
       });
     } catch (error) {
       this.logger.error('Failed to connect to MQTT broker:', error);
@@ -93,6 +110,11 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     topic: string,
     callback: (topic: string, message: Buffer) => void,
   ) {
+    if (!this.topicCallbacks.has(topic)) {
+      this.topicCallbacks.set(topic, new Set());
+    }
+    this.topicCallbacks.get(topic)!.add(callback);
+
     if (this.client && this.client.connected) {
       this.client.subscribe(topic, (err) => {
         if (err) {
@@ -101,12 +123,8 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           this.logger.log(`Subscribed to topic: ${topic}`);
         }
       });
-
-      this.client.on('message', (receivedTopic: string, payload: Buffer) => {
-        if (this.topicMatches(topic, receivedTopic)) {
-          callback(receivedTopic, payload);
-        }
-      });
+    } else {
+      this.logger.warn(`MQTT not connected, callback registered for ${topic} but subscription will happen on connect`);
     }
   }
 

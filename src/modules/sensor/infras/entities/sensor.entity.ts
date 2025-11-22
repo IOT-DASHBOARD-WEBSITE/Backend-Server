@@ -15,7 +15,7 @@ export class SensorData {
   humidity: number;
 
   @Prop({ nullable: true })
-  pressure?: number;
+  light?: number;
 
   @Prop({ type: Date, required: true })
   timestamp: Date;

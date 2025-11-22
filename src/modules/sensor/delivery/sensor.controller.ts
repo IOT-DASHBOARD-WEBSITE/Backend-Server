@@ -51,22 +51,36 @@ export class SensorController {
     const sensorData = await this.sensorService.create(createSensorDataDto);
 
     // Publish to Adafruit IO
-    if (
-      createSensorDataDto.temperature !== undefined &&
-      createSensorDataDto.temperature !== null
-    ) {
-      await this.adafruitPublisher.publishTemperature(
-        createSensorDataDto.temperature,
-      );
-    }
+    try {
+      if (
+        createSensorDataDto.temperature !== undefined &&
+        createSensorDataDto.temperature !== null
+      ) {
+        await this.adafruitPublisher.publishTemperature(
+          createSensorDataDto.temperature,
+        );
+      }
 
-    if (
-      createSensorDataDto.humidity !== undefined &&
-      createSensorDataDto.humidity !== null
-    ) {
-      await this.adafruitPublisher.publishHumidity(
-        createSensorDataDto.humidity,
-      );
+      if (
+        createSensorDataDto.humidity !== undefined &&
+        createSensorDataDto.humidity !== null
+      ) {
+        await this.adafruitPublisher.publishHumidity(
+          createSensorDataDto.humidity,
+        );
+      }
+
+      if (
+        createSensorDataDto.light !== undefined &&
+        createSensorDataDto.light !== null
+      ) {
+        await this.adafruitPublisher.publishLight(
+          createSensorDataDto.light,
+        );
+      }
+    } catch (error) {
+      // Log error but don't fail the request
+      console.error('Failed to publish to Adafruit:', error);
     }
 
     return sensorData;
